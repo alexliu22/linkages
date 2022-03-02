@@ -323,18 +323,35 @@ function update() {
 }
 
 link = PRESETS[0].copy();
+isDrawing=false
 
 $(function() {
+    $('#canvas').mousedown(function(event) {
+        var offset = $(this).offset();
+        var x = event.pageX - offset.left;
+        var y = event.pageY - offset.top;
+        isDrawing=true
+        mouseleft(x, y);
+    });
+
+    $('#canvas').mousemove(function(event) {
+        if(!isDrawing) return;
+        var offset = $(this).offset();
+        var x = event.pageX - offset.left;
+        var y = event.pageY - offset.top;
+        mouseright(x, y);
+    });
+
     $('#canvas').mouseup(function(event) {
         var offset = $(this).offset();
         var x = event.pageX - offset.left;
         var y = event.pageY - offset.top;
-        if (event.shiftKey)
-            mouseright(x, y);
-        else if (event.altKey)
+        isDrawing=false
+        if (event.altKey)
             mousemiddle(x, y);
         else
             mouseleft(x, y);
+            mouseright(x, y);
     });
 
     $(window).keypress(function(event) {
