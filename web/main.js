@@ -18,7 +18,7 @@ function reset() {
 }
 
 var VELOCITY_COEFF = 1;
-var VELOCITY_MAG = 1;
+var VELOCITY_MAG = 1000;
 
 var VERTEX_SIZE = 10;
 var LINE_WIDTH = 3;
@@ -346,12 +346,14 @@ $(function() {
         var offset = $(this).offset();
         var x = event.pageX - offset.left;
         var y = event.pageY - offset.top;
+        attractor = [x, y];
+        display();
         isDrawing=false
         if (event.altKey)
             mousemiddle(x, y);
-        else
-            mouseleft(x, y);
-            mouseright(x, y);
+        // else
+            // mouseleft(x, y);
+            // mouseright(x, y);
     });
 
     $(window).keypress(function(event) {
