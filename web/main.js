@@ -7,7 +7,13 @@ var tracks = {};
 var view = 0;
 var VIEWS = 8;
 var info = 0;
+var label = 0
+var color = "black";
 var INFOS = 2;
+var createButton = 1;
+var savedCount = 3;
+let shapeBool = true;
+let map = new Map();
 
 function reset() {
     allVelocities = [];
@@ -15,6 +21,7 @@ function reset() {
     curEdge = undefined;
     attractor = undefined;
     tracks = {};
+    map = new Map();
 }
 
 var VELOCITY_COEFF = 1;
@@ -41,10 +48,32 @@ function strokeLine(c, u, v) {
 }
 
 function fillPoint(c, v) {
-    c.fillRect(v[0] - VERTEX_SIZE/2, v[1] - VERTEX_SIZE/2,
+    if(shapeBool){
+        c.beginPath();
+        c.rect(v[0] - VERTEX_SIZE/2, v[1] - VERTEX_SIZE/2,
                VERTEX_SIZE, VERTEX_SIZE);
+        c.fill();
+        c.stroke();
+        }
+    else{
+        c.beginPath();
+        c.arc(v[0] , v[1] , VERTEX_SIZE/2, 0, 2 * Math.PI, false);
+        c.fill();
+        c.stroke();
+    }
 }
-
+function fillAttractor(c, v){
+    c.beginPath();
+    c.moveTo(v[0], v[1]);
+    c.lineTo(v[0]+10, v[1]+10);
+    c.strokeStyle = 'red';
+    c.stroke();
+    c.beginPath();
+    c.moveTo(v[0]+10, v[1]);
+    c.lineTo(v[0], v[1]+10);
+    c.strokeStyle = 'red'
+    c.stroke()
+}
 function colorComponent(x) {
     x = Math.round(255 * x).toString(16);
     if (x.length < 2) x = '0' + x;
@@ -55,8 +84,102 @@ function colorString(r, g, b) {
     return '#' + colorComponent(r) + colorComponent(g) + colorComponent(b);
 }
 
-
 function display() {
+    if (createButton & 1){
+        let buttonPane = document.createElement("body");
+        buttonPane.style.display = "flex";
+        buttonPane.style.justifyContent = "space-evenly";
+
+        let fixButton = document.createElement("button");
+        fixButton.innerHTML = "Fix Vertex";
+        fixButton.height = "50";
+        fixButton.onclick = function () {
+            keypress('f');
+        };
+        buttonPane.appendChild(fixButton);
+
+        let traceButton = document.createElement("button");
+        traceButton.innerHTML = "Trace Vertex";
+        traceButton.onclick = function () {
+            keypress('t');
+        };
+        buttonPane.appendChild(traceButton);
+
+        let delButton = document.createElement("button");
+        delButton.innerHTML = "Delete Vertex";
+        delButton.onclick = function () {
+            keypress('d');
+            
+        };
+        buttonPane.appendChild(delButton);
+
+        let viewButton = document.createElement("button");
+        viewButton.innerHTML = "Change view";
+        viewButton.onclick = function () {
+            keypress('v');
+        };
+        buttonPane.appendChild(viewButton);
+
+        let infoButton = document.createElement("button");
+        infoButton.innerHTML = "Toggle Info";
+        infoButton.onclick = function () {
+            keypress('i');
+        };
+        buttonPane.appendChild(infoButton);
+
+        let editLabelButton = document.createElement("button");
+        editLabelButton.innerHTML = "Edit Label";
+        editLabelButton.onclick = function () {
+            keypress('q');
+        };
+        buttonPane.appendChild(editLabelButton);
+
+        let labelButton = document.createElement("button");
+        labelButton.innerHTML = "Toggle Labels";
+        labelButton.onclick = function () {
+            keypress('l');
+        };
+        buttonPane.appendChild(labelButton);
+
+        let clearButton = document.createElement("button");
+        clearButton.innerHTML = "Clear Screen";
+        clearButton.onclick = function () {
+            keypress('c');
+        };
+        buttonPane.appendChild(clearButton);
+
+        let saveButton = document.createElement("button");
+        saveButton.innerHTML = "Save Linkage";
+        saveButton.onclick = function () {
+            keypress('s');
+        };
+        buttonPane.appendChild(saveButton);
+
+        let importButton = document.createElement("input");
+        importButton.setAttribute("type", "file");
+        importButton.setAttribute("accept", ".json")
+        importButton.innerHTML = "Import Linkage";
+        importButton.id = "import";
+        importButton.onclick = function () {
+            keypress('u');
+        };
+        buttonPane.appendChild(importButton);
+
+        document.body.appendChild(buttonPane);
+
+        let colorBtn = document.getElementById("color-btn"); 
+
+        let selectBtn = document.getElementById("color-select-btn"); 
+        selectBtn.onclick = function () {
+            color = colorBtn.value;
+            link.colors[curVertex] = colorBtn.value;
+            createMap();
+            display();
+        };
+        
+        createButton = 0;
+    }
+
     var num = numeric;
     var canvas = $('#canvas');
     canvas.attr('width', canvas.width());
@@ -71,6 +194,21 @@ function display() {
                    50, 50);
     }
 
+    if (!(label & 1)) {
+        if (link.labels.length < link.vertices.length) {
+            for(let j = link.labels.length; j < link.vertices.length; j++){
+                link.labels[j] = String.fromCharCode(65 + j + link.labelCount);
+                
+            }
+        }
+
+        for(let i = 0; i < link.vertices.length; i++){
+            var x = link.vertices[i][0];
+            var y = link.vertices[i][1];
+            c.fillText(link.labels[i], x + 8, y + 12);
+        }
+    }
+    createMap();
     _.each(link.edges, function(e, k) {
         if (k == curEdge) c.strokeStyle = colorString(1, 0.3, 1);
         else c.strokeStyle = colorString(1, 0.3, 0);
@@ -114,17 +252,55 @@ function display() {
         var r = link.fixed.indexOf(i) != -1 ? 1 : 0;
         var g = i in tracks ? 1 : 0;
         if (i == curVertex || !(view & 2)) {
-            c.fillStyle = colorString(r, g, b);
+            c.fillStyle = link.colors[i];
+            c.lineWidth = 2;
+            if(curVertex!=i)
+                c.strokeStyle = "black";
+            else{
+                c.strokeStyle = "red";
+                
+            }
+
+            if(link.fixed.indexOf(i) == -1)
+                shapeBool = false;
+            else
+                shapeBool = true;
             fillPoint(c, v);
         }
     });
 
     if (attractor) {
         c.fillStyle = colorString(0.5, 0.5, 0.5)
-        fillPoint(c, attractor);
+        fillAttractor(c, attractor);
     }
+    
 }
+function createMap(){
+    map.clear();
+    for(let j = 0; j < link.colors.length; j++){
+        if(!map.has(link.colors[j])){
+            let l = [];
+            map.set(link.colors[j], l);
+        }
+        let n = map.get(link.colors[j]);
+        n.push(link.labels[j]);
+        
+        map.set(link.colors[j],n);
+    }
+    let table = '<table border="1">';
+    table += `<tr><th>Color</th><th>Labels</th></tr>`;
+    
+    map.forEach((values , keys) => {
 
+        table = table + `<tr>`;
+        table = table + `<td style="color:${keys}">&#9635</td>`;
+        table = table + `<td>${values}</td>`;
+        table += `</tr>`;
+        
+        });
+    table += "</table>";
+    document.getElementById("color-table").innerHTML = table;
+}
 function pick(x, y) {
     var i = link.findVertex(x, y);
     if (i >= 0 && link.vertexDist2(x, y, i) < PICK_DIST2)
@@ -167,6 +343,7 @@ function mouseleft(x, y) {
     }
     else {
         link.vertices.push([x, y]);
+        link.colors.push("black");
         update();
     }
 }
@@ -219,6 +396,7 @@ function keypress(key) {
     }
 
     else if (key == 'd') {
+        
         if (curVertex >= 0) {
             if (curVertex in tracks) {
                 var oldTracks = tracks;
@@ -238,6 +416,13 @@ function keypress(key) {
             curEdge = undefined;
             update();
         }
+        
+    }
+
+    else if(key == 'q' && curVertex >=0) {
+        var new_label = prompt("Please enter new label", "<new label>");
+        link.labels[curVertex] = new_label;
+        display();
     }
 
     else if (key == 'c') {
@@ -256,6 +441,61 @@ function keypress(key) {
         display();
     }
 
+    else if (key == 'l') {
+        label = (label + 1) % INFOS;
+        display();
+    }
+
+    else if (key == 'n') {
+        instr = (instr + 1) % INFOS;
+        display();
+    }
+
+    else if (key == 's') {
+        var linkageName = prompt("What would you like to name this linkage?", "<name>");
+        if (linkageName == null) return;
+
+        var verticesCopy = [];
+        for (var i=0; i<link.vertices.length; i++) {
+            verticesCopy.push([...link.vertices[i]]);
+        }
+
+        var linkageCopy = {
+            vertices: verticesCopy,
+            labels: [...link.labels],
+            fixed: [...link.fixed],
+            edges: [...link.edges],
+            angles: [...link.angles],
+            colors: [...link.colors],
+            labelCount: link.labelCount,
+        }
+        console.log(linkageCopy);
+
+        download(linkageName, JSON.stringify(linkageCopy));
+    }
+
+    else if (key == 'u') {
+        document.getElementById("import").addEventListener("change", function() {
+            var file_to_read = document.getElementById("import").files[0];
+            var fileread = new FileReader();
+            fileread.onload = function(e) {
+              var content = e.target.result;
+              var intern = JSON.parse(content);
+              
+              reset();
+              link.vertices = intern.vertices;
+              link.labels = intern.labels;
+              link.fixed = intern.fixed;
+              link.edges = intern.edges;
+              link.angles = intern.angles;
+              link.colors = intern.colors;
+              link.labelCount = intern.labelCount;
+              update();
+            };
+            fileread.readAsText(file_to_read);
+          });
+    }
+
     else if ((key - '1') in PRESETS) {
         reset();
         link = PRESETS[key - '1'].copy();
@@ -263,6 +503,18 @@ function keypress(key) {
     }
 }
 
+function download(filename, text) {
+    var element = document.createElement('a');
+    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+    element.setAttribute('download', filename + '.json');
+  
+    element.style.display = 'none';
+    document.body.appendChild(element);
+  
+    element.click();
+  
+    document.body.removeChild(element);
+  }
 
 var resized = false;
 function idle() {
