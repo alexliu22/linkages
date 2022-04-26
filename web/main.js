@@ -25,7 +25,7 @@ function reset() {
 }
 
 var VELOCITY_COEFF = 1;
-var VELOCITY_MAG = 1000;
+var VELOCITY_MAG = 1;
 
 var VERTEX_SIZE = 10;
 var LINE_WIDTH = 3;
@@ -35,6 +35,7 @@ var PICK_DIST2 = 100;
 var ATTRACT_DIST2 = 25;
 var TRACK_LENGTH = 1024;
 var TRACK_DIST2 = 4;
+let isDrawing=false
 
 function normalized(v) {
     return numeric.div(v, numeric.norm2(v));
@@ -344,8 +345,10 @@ function makeAngle2(i1, j1, i2, j2) {
 function mouseleft(x, y) {
     var picked = pick(x, y);
     if (picked.vertex >= 0 || picked.edge >= 0) {
-        if (curVertices.indexOf(picked.vertex) >= 0)
+        if (curVertices.indexOf(picked.vertex) >= 0){
             curVertices = curVertices.filter(vertex => vertex !== picked.vertex); // clicking cur deselects
+            isDrawing=false
+        }
         else {
             if (picked.vertex !== undefined)
                 curVertices.push(picked.vertex);
@@ -356,6 +359,8 @@ function mouseleft(x, y) {
         display();
     }
     else {
+        if(curVertices.length > 0)
+            return
         link.vertices.push([x, y]);
         link.colors.push("black");
         update();
@@ -623,7 +628,7 @@ function update() {
 }
 
 link = PRESETS[0].copy();
-isDrawing=false
+
 
 $(function() {
     $('#canvas').mousedown(function(event) {
@@ -646,14 +651,12 @@ $(function() {
         var offset = $(this).offset();
         var x = event.pageX - offset.left;
         var y = event.pageY - offset.top;
-        attractor = [x, y];
+        if(isDrawing)
+            attractor = [x, y];
         display();
         isDrawing=false
         if (event.altKey)
             mousemiddle(x, y);
-        // else
-            // mouseleft(x, y);
-            // mouseright(x, y);
     });
 
     $(window).keypress(function(event) {
